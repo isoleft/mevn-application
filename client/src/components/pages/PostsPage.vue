@@ -1,50 +1,95 @@
 <template>
-<div class="container">
-    <div class="row">
-        <div class="col-xs-12">
-            <h1>Posts</h1>
-            <h3>This file will list all the posts</h3>
-            <section class="panel panel-success" v-if="posts.length">
-                <div class="panel-heading">list of posts</div>
-                <table class="table table-striped">
-                    <tr>
-                        <th>Title</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr v-for="post in posts" :key="post.title">
-                        <td>{{ post.title }}</td>
-                        <td>{{ post.description }}</td>
-                    </tr>
-                </table>
-            </section>
-            <section class="panel panel-danger" !v-if="posts.length">
-                <p>There are no posts ... Lets add one now!</p>
-                <div>
-                    <router-link :to="{ name: 'NewPost' }">add new post</router-link>
-                </div>
-            </section>
-        </div>
+<div>
+  <div>
+  <select style="position: absolute; top: 20px; left: 100px;" v-model="selectedSort">
+    <option disabled value="">Выберите фильтр</option>
+    <option class="dropdown-item" :selected="sort.Name == selectedSort.Name" v-for="sort in sortTypes" :key="sort.Name" v-bind:value="sort">{{sort.Name}}</option>
+  </select>
+  </div>
+  <div class="add">
+      <router-link class="btn btn-success" v-bind:to="{ name: 'NewPost' }">Добавить книгу</router-link>
+    </div>
+    <div class="list">
+      <ul>
+        <book-item
+          v-for="post in posts"
+          v-bind:post="post"
+          v-bind:key="post.Name"
+        ></book-item>
+      </ul>
     </div>
 </div>
 </template>
 
 <script>
 import PostsService from '@/services/PostsService'
+import BookItem from '@/components/BookItem'
+
+const DEFAULT_SORT = 'Last'
+
 export default {
   name: 'PostsPage',
+  components: { BookItem },
   data () {
     return {
-      posts: []
+      posts: [],
+      selectedSort: '',
+      sortTypes: {
+        Last: {
+          sortBy: 'Date_in',
+          sortOrder: -1,
+          Name: 'По дате добавления(сначала новые)'
+        },
+        Old: {
+          sortBy: 'Date_in',
+          sortOrder: 1,
+          Name: 'По дате добавления(сначала старые)'
+        },
+        CountPagesMany: {
+          sortBy: 'Pages',
+          sortOrder: -1,
+          Name: 'По количеству страниц(много)'
+        },
+        CountPahesLittle: {
+          sortBy: 'Pages',
+          sortOrder: 1,
+          Name: 'По количеству страниц(мало)'
+        },
+        Abc: {
+          sortBy: 'Name',
+          sortOrder: 1,
+          Name: 'По алфавиту'
+        },
+        Cba: {
+          sortBy: 'Name',
+          sortOrder: -1,
+          Name: 'Против алфавиту'
+        }
+      }
     }
   },
   methods: {
-    async getPosts () {
-      const response = await PostsService.fetchPosts()
+    async getPosts (sort) {
+      const response = await PostsService.fetchPosts(sort.sortBy, sort.sortOrder)
       this.posts = response.data.posts
     }
   },
   mounted () {
-    this.getPosts()
+    this.selectedSort = this.sortTypes[DEFAULT_SORT]
+    this.getPosts(this.selectedSort)
+  },
+  watch: {
+    selectedSort (value) {
+      this.getPosts(value)
+    }
   }
 }
 </script>
+
+<style scoped>
+.add {
+  position: absolute;
+  margin-left: 440px;
+  top: 10px;
+}
+</style>
